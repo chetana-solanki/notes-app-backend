@@ -1,0 +1,266 @@
+नीचे मैं Node.js + Express + MongoDB के लिए proper backend folder structure step-by-step बता रहा हूँ, beginner-friendly तरीके से।
+
+✅ Step 1: Backend Folder Create करो
+
+Terminal / CMD में:
+
+mkdir backend
+cd backend
+
+✅ Step 2: Node Project Initialize करो
+npm init -y
+
+
+👉 इससे package.json बन जाएगा
+
+✅ Step 3: Required Packages Install करो
+npm install express mongoose cors dotenv
+npm install nodemon --save-dev
+
+Packages का काम:
+
+express → server & API
+
+mongoose → MongoDB connect
+
+cors → frontend से request allow
+
+dotenv → .env file use करने के लिए
+
+nodemon → auto server restart
+
+✅ Step 4: Basic Folder Structure बनाओ
+backend/
+│
+├── src/
+│   ├── config/
+│   │   └── db.js
+│   │
+│   ├── models/
+│   │   └── User.js
+│   │
+│   ├── routes/
+│   │   └── userRoutes.js
+│   │
+│   ├── controllers/
+│   │   └── userController.js
+│   │
+│   ├── app.js
+│
+├── server.js
+├── .env
+├── package.json
+└── nodemon.json (optional)
+
+✅ Step 5: .env File Setup करो
+
+.env
+
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/myapp
+
+✅ Step 6: MongoDB Connection (config/db.js)
+const mongoose = require("mongoose");
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB Connected");
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+
+✅ Step 7: Express App Setup (src/app.js)
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("API Running...");
+});
+
+module.exports = app;
+
+✅ Step 8: Server Entry Point (server.js)
+const dotenv = require("dotenv");
+dotenv.config();
+
+const app = require("./src/app");
+const connectDB = require("./src/config/db");
+
+connectDB();
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+✅ Step 9: Model बनाओ (models/User.js)
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  password: String
+});
+
+module.exports = mongoose.model("User", userSchema);
+
+✅ Step 10: Controller बनाओ (controllers/userController.js)
+const User = require("../models/User");
+
+exports.createUser = async (req, res) => {
+  const user = await User.create(req.body);
+  res.json(user);
+};
+
+✅ Step 11: Routes बनाओ (routes/userRoutes.js)
+const express = require("express");
+const router = express.Router();
+const { createUser } = require("../controllers/userController");
+
+router.post("/users", createUser);
+
+module.exports = router;
+
+✅ Step 12: Routes को App में Use करो
+
+src/app.js में add करो:
+
+const userRoutes = require("./routes/userRoutes");
+
+app.use("/api", userRoutes);
+
+✅ Step 13: Nodemon Script Add करो
+
+package.json
+
+"scripts": {
+  "start": "node server.js",
+  "dev": "nodemon server.js"
+}
+
+✅ Step 14: Server Run करो 🚀
+npm run dev
+
+
+Browser में खोलो:
+
+http://localhost:5000
+
+🧠 Short Summary (Yaad rakhne ke liye)
+
+server.js → entry point
+
+app.js → express config
+
+routes → API endpoints
+
+controllers → logic
+
+models → database schema
+
+config → DB & configs
+
+
+
+index.js
+1️⃣ MongoDB कनेक्शन इम्पोर्ट करना
+const connectToMongo = require('./db');
+
+
+👉 यह लाइन db.js फाइल से MongoDB कनेक्शन फंक्शन को इम्पोर्ट करती है।
+👉 इसी फाइल में mongoose.connect() लिखा होता है।
+
+2️⃣ Express और CORS इम्पोर्ट करना
+const express = require('express')
+var cors = require('cors')
+
+
+Express → Node.js का framework है, जिससे API बनाते हैं
+
+CORS → Frontend (React) और Backend (Node) के बीच request allow करता है
+
+3️⃣ MongoDB से कनेक्ट करना
+connectToMongo();
+
+
+👉 जैसे ही server start होता है, यह लाइन MongoDB से connection बना देती है
+
+4️⃣ Express App बनाना
+const app = express()
+
+
+👉 app हमारा पूरा backend application है
+
+5️⃣ Port सेट करना
+const port = 5000
+
+
+👉 Server port 5000 पर run करेगा
+👉 URL होगा → http://localhost:5000
+
+6️⃣ Middleware लगाना
+app.use(cors())
+app.use(express.json())
+
+🔹 cors()
+
+React frontend से आने वाली requests को allow करता है
+
+🔹 express.json()
+
+Request body में आने वाले JSON data को पढ़ने के लिए जरूरी
+
+7️⃣ Routes जोड़ना
+app.use('/api/auth', require('./routes/auth'))
+app.use('/api/notes', require('./routes/notes'))
+
+🔹 Auth Route
+http://localhost:5000/api/auth
+
+
+👉 Login, Signup, JWT, User Authentication से related APIs
+
+🔹 Notes Route
+http://localhost:5000/api/notes
+
+
+👉 Notes add, update, delete, fetch करने की APIs
+
+📁 routes/auth.js
+📁 routes/notes.js
+
+इन दोनों फाइलों में API logic लिखा होता है
+
+8️⃣ Server को चालू करना
+app.listen(port, () => {
+  console.log(`iNotebook backend listening at http://localhost:${port}`)
+})
+
+
+👉 यह server को start करता है
+👉 Console में दिखेगा:
+
+iNotebook backend listening at http://localhost:5000
+
+🔁 पूरा Flow (Simple Words में)
+
+Server start हुआ
+
+MongoDB connect हुई
+
+Middleware setup हुआ
+
+Routes load हुए
+
+Server request सुनने लगा

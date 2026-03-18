@@ -2,13 +2,10 @@
 var jwt = require('jsonwebtoken');
 
 // Secret key jo JWT token verify karne me use hoti hai
-const JWT_SECRET = "9fA7!kP2#MZxQe@L8wR$JdS5hT^C0YB1mN";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // fetchuser middleware function
 const fetchuser = (req, res, next) => {
-
-    // Request header me jo auth-token aaya hai usko console me print kar rahe hain
-    console.log(req.header('auth-token'))
 
     // Header se token nikaal rahe hain
     const token = req.header('auth-token');

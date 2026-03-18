@@ -18,7 +18,7 @@ var jwt = require('jsonwebtoken');
 const fetchuser = require("../middleware/fetchuser");
 
 // JWT secret key (real project me .env file me rakhna chahiye)
-const JWT_SECRET = "9fA7!kP2#MZxQe@L8wR$JdS5hT^C0YB1mN"
+const JWT_SECRET = process.env.JWT_SECRET;
 
 
 // ================= ROUTE 1 =================

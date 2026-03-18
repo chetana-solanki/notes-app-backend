@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const mongooseURL = "mongodb://localhost:27017/todo";
+const mongooseURL = process.env.MONGO_URL;
 
 const connectToMongo = () => {
     try {

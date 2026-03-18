@@ -2,7 +2,7 @@
 const express = require("express");
 
 // fetchuser middleware import (JWT authentication ke liye)
-const fetchuser = require("../middleware/fetchuser");
+const {fetchuser,admin} = require("../middleware/fetchuser");
 
 // Notes model import (MongoDB collection)
 const Notes = require("../models/Notes");
@@ -194,5 +194,49 @@ router.delete('/deletenote/:id', fetchuser, async (req, res) => {
     }
 })
 
+
+// ================= ROUTE =================
+// count notes of logged in user
+// method : GET
+// url : /api/auth/countnotes
+
+router.get('/countnotes', fetchuser, async (req, res) => {
+  try {
+
+    const totalNotes = await Notes.countDocuments({ user: req.user.id });
+
+    res.json({
+      success: true,
+      totalNotes
+    });
+
+  } catch (error) {
+
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+
+  }
+});
+
+
+router.get('/countallnotes', fetchuser,admin, async (req, res) => {
+  try {
+
+    const totalNotes = await Notes.countDocuments();
+
+    res.json({
+      success: true,
+      totalNotes
+    });
+
+  } catch (error) {
+
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+
+  }
+});
+
 // Router ko export kar rahe hain taaki main app.js/index.js me use ho sake
 module.exports = router
+

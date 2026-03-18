@@ -15,10 +15,11 @@ const bcrypt = require("bcryptjs");
 // JWT token generate karne ke liye jsonwebtoken import kiya
 // jwt token user ko varify karne ka ek tarika he 
 var jwt = require('jsonwebtoken');
-const fetchuser = require("../middleware/fetchuser");
+const { fetchuser, admin } = require("../middleware/fetchuser");
+const Notes = require("../models/Notes");
 
 // JWT secret key (real project me .env file me rakhna chahiye)
-const JWT_SECRET = "9fA7!kP2#MZxQe@L8wR$JdS5hT^C0YB1mN"
+const JWT_SECRET = process.env.JWT_SECRET
 
 
 // ================= ROUTE 1 =================
@@ -73,7 +74,8 @@ router.post(
 
       const data = {
         user: {
-          id: user.id
+          id: user.id,
+          role: user.role
         }
       }
       const authtoken = jwt.sign(data, JWT_SECRET);
@@ -129,7 +131,8 @@ router.post(
 
       const data = {
         user: {
-          id: user.id
+          id: user.id,
+          role: user.role
         }
       }
       const authtoken = jwt.sign(data, JWT_SECRET);
@@ -154,7 +157,7 @@ router.post(
 
 // POST request route banaya "/getuser" path ke liye
 // fetchuser middleware pehle chalega (JWT se user verify karega)
-router.post("/getuser", fetchuser, async (req, res) => {
+router.get("/getuser", fetchuser, async (req, res) => {
 
   // try block — agar koi error na ho to ye code chalega
   try {
@@ -179,5 +182,187 @@ router.post("/getuser", fetchuser, async (req, res) => {
   }
 });
 
+
+
+// ================= ROUTE 4=================
+//updateuser
+//method : PUT
+//url : /api/auth/updateuser/:id
+//login is requird
+// Put request route banaya "/updateuser" path ke liye
+// fetchuser middleware pehle chalega (JWT se user verify karega)
+router.put("/updateuser/:id", fetchuser,
+  [
+    // Name validation: minimum 3 aur maximum 20 characters
+    body('name', 'Please enter a valid name').optional().isLength({ min: 3, max: 20 }),
+
+    // Email validation
+    body('email', 'Please enter a valid email').optional().isEmail(),
+
+    // Password strong validation
+    body("password").optional()
+      .isLength({ min: 8 }).withMessage("Password kam se kam 8 characters ka hona chahiye")
+      .matches(/[A-Z]/).withMessage("Password me ek uppercase letter hona chahiye")
+      .matches(/[a-z]/).withMessage("Password me ek lowercase letter hona chahiye")
+      .matches(/[0-9]/).withMessage("Password me ek number hona chahiye")
+      .matches(/[@$!%*?&#]/).withMessage("Password me ek special character hona chahiye")
+  ],
+  async (req, res) => {
+
+    // Validation errors check
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      if (req.params.id !== req.user.id) {
+        return res.status(401).send("Not Allowed");
+      }
+      // Request body se email aur password nikal rahe hain
+      const { name, email, password } = req.body || {};
+
+      const newUser = {};
+
+      if (name) { newUser.name = name };
+      if (email) { newUser.email = email };
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        const securePassword = await bcrypt.hash(password, salt);
+        newUser.password = securePassword
+      };
+
+      let user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).send("Not Found");
+      }
+      user = await User.findByIdAndUpdate(
+        req.params.id,
+        { $set: newUser },
+        { new: true }
+      )
+
+      // Updated note ko frontend ko JSON format me bhej rahe hain
+      res.json({ user });
+
+
+    } catch (error) {
+      // Agar server error aaye to console me print karega
+      console.error(error.message);
+
+      // Client ko 500 Internal Server Error bhej rahe hain
+      res.status(500).send("Internal Server Error");
+    }
+
+  });
+
+
+
+// ================= ROUTE 5=================
+//deleteuser
+//method : DELETE
+//url : /api/auth/deleteuser/:id
+//login is requird
+// delete request route banaya "/deleteuser" path ke liye
+// fetchuser middleware pehle chalega (JWT se user verify karega)  
+router.delete('/deleteuser/:id', fetchuser, async (req, res) => {
+
+  try {
+
+    let user = await User.findById(req.params.id);
+
+    if (!user) { return res.status(404).send("User not found in database") }
+
+    if (req.params.id !== req.user.id) {
+      return res.status(401).send("Not Allowed");
+    }
+    await Notes.deleteMany({ user: req.params.id })
+    // Agar user owner hai to note ko MongoDB se delete kar rahe hain
+    user = await User.findByIdAndDelete(req.params.id)
+
+    // Frontend ko success message aur deleted note bhej rahe hain
+    res.json({ "Success": "User has been deleted", user: user });
+
+  } catch (error) {
+
+    // Agar koi server error aaye to console me print karega
+    console.error(error.message);
+
+    // Client ko 500 Internal Server Error bhej rahe hain
+    res.status(500).send("Internal Server Error");
+  }
+})
+
+
+
+router.get('/fetchallusers', fetchuser, admin, async (req, res) => {
+  try {
+
+    // sabhi users fetch kar rahe hain (password hide kar diya)
+    const users = await User.find().select("-password");
+
+    res.json({
+      success: true,
+      users
+    });
+
+  } catch (error) {
+
+    console.error(error.message);
+
+    res.status(500).send("Internal Server Error");
+
+  }
+});
+
+router.get('/countusers', fetchuser, admin, async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+
+    res.json({
+      success: true,
+      totalUsers
+    });
+
+  } catch (error) {
+
+    console.error(error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
+
+  }
+});
 // Router ko export kar rahe hain taaki app.js me use ho sake
+
+// ================= ROUTE =================
+// get single user by id
+// method : GET
+// url : /api/auth/getsingleuser/:id
+// login required
+
+router.get('/getsingleuser/:id', fetchuser, admin, async (req, res) => {
+  try {
+
+    const user = await User.findById(req.params.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({
+      success: true,
+      user
+    });
+
+  } catch (error) {
+
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+
+  }
+});
+
 module.exports = router;

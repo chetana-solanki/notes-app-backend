@@ -2,13 +2,10 @@
 var jwt = require('jsonwebtoken');
 
 // Secret key jo JWT token verify karne me use hoti hai
-const JWT_SECRET = "9fA7!kP2#MZxQe@L8wR$JdS5hT^C0YB1mN";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // fetchuser middleware function
 const fetchuser = (req, res, next) => {
-
-    // Request header me jo auth-token aaya hai usko console me print kar rahe hain
-    console.log(req.header('auth-token'))
 
     // Header se token nikaal rahe hain
     const token = req.header('auth-token');
@@ -38,5 +35,22 @@ const fetchuser = (req, res, next) => {
 
 }
 
+const admin = (req, res, next) => {
+    try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Admin only.',
+            });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+        });
+    }
+}
+
 // fetchuser ko export kar rahe hain taki dusri files me use ho sake
-module.exports = fetchuser;
+module.exports = { fetchuser, admin };
